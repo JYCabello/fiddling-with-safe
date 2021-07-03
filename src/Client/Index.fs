@@ -3,8 +3,9 @@ module Index
 open Elmish
 open Fable.Remoting.Client
 open Shared
+open Browser
 
-type Model = { Todos: Todo list; Input: string }
+type Model = { Todos: Todo list; Input: string; Title: string option }
 
 type Msg =
     | GotTodos of Todo list
@@ -18,8 +19,7 @@ let todosApi =
     |> Remoting.buildProxy<ITodosApi>
 
 let init () : Model * Cmd<Msg> =
-    let model = { Todos = []; Input = "" }
-
+    let model = { Todos = []; Input = ""; Title = None }
     let cmd =
         Cmd.OfAsync.perform todosApi.getTodos () GotTodos
 
@@ -38,7 +38,8 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
         { model with Input = "" }, cmd
     | AddedTodo todo ->
         { model with
-              Todos = model.Todos @ [ todo ] },
+              Todos = model.Todos @ [ todo ]
+              Title = Some $"There are %i{model.Todos |> List.length |> (+) 1}"},
         Cmd.none
 
 open Feliz
@@ -97,6 +98,7 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
     ]
 
 let view (model: Model) (dispatch: Msg -> unit) =
+    document.title <- model.Title |> Option.defaultValue "TODO app"
     Bulma.hero [
         hero.isFullHeight
         color.isPrimary
@@ -119,7 +121,7 @@ let view (model: Model) (dispatch: Msg -> unit) =
                         prop.children [
                             Bulma.title [
                                 text.hasTextCentered
-                                prop.text "trying_safe"
+                                prop.text "TODO App to try the SAFE stack"
                             ]
                             containerBox model dispatch
                         ]
