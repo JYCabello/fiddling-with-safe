@@ -8,8 +8,12 @@ open Browser
 type Model =
   { Todos: Todo list
     Input: string
-    Title: string option
     Error: string option }
+  member self.Title: string option =
+    self.Todos
+    |> List.length
+    |> (fun count -> if count = 0 then None else Some $"There are %i{count}")
+
 
 type Msg =
   | GotTodos of Todo list
@@ -23,7 +27,7 @@ let todosApi =
   |> Remoting.buildProxy<ITodosApi>
 
 let init () : Model * Cmd<Msg> =
-    { Todos = []; Input = ""; Title = None; Error = None },
+    { Todos = []; Input = ""; Error = None },
     Cmd.OfAsync.perform todosApi.getTodos () GotTodos
 
 let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
@@ -37,11 +41,7 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
           | Ok todo -> { model with Input = ""; Error = None }, add todo
           | Error error -> { model with Error = Some error }, Cmd.none
 
-    | AddedTodo todo ->
-      { model with
-          Todos = model.Todos @ [ todo ]
-          Title = Some $"There are %i{model.Todos |> List.length |> (+) 1}"},
-      Cmd.none
+    | AddedTodo todo -> { model with Todos = model.Todos @ [ todo ] }, Cmd.none
 
 open Feliz
 open Feliz.Bulma
@@ -72,10 +72,8 @@ let todoInput (model: Model) (dispatch: Msg -> unit) =
           | None -> if model.Input.Length > 0 then color.isSuccess
       ]
       Bulma.help [
-        match model.Error with
-          | Some _ -> color.isDanger
-          | None -> color.isSuccess
-        prop.text (model.Error |> Option.defaultValue "")
+        if model.Error.IsSome then color.isDanger
+        prop.text (model.Error |> Option.defaultValue "Press enter or click the button to save")
       ]
     ]
 
