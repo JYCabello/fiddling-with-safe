@@ -72,17 +72,18 @@ let todoInput (model: Model) (dispatch: Msg -> unit) =
           | None -> if model.Input.Length > 0 then color.isSuccess
       ]
       Bulma.help [
-        if model.Error.IsSome then color.isDanger
+        if model.Error.IsSome then color.isDanger else color.isSuccess
         prop.text (model.Error |> Option.defaultValue "Press enter or click the button to save")
       ]
     ]
 
-let listItems (todos: Todo list) : seq<Fable.React.ReactElement> =
-    query { for todo in todos do select (Html.li [ prop.text todo.Description ]) }
-
 let containerBox (model: Model) (dispatch: Msg -> unit) =
     Bulma.box [
-      Bulma.content [ Html.ol (Seq.map (fun todo -> Html.li [ prop.text todo.Description ]) model.Todos) ]
+      Bulma.content [
+        Html.ol [
+          for todo in model.Todos do Html.li [ prop.text todo.Description ]
+        ]
+      ]
       Bulma.field.div [
         field.isGrouped
         prop.children [
