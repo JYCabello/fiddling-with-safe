@@ -12,7 +12,7 @@ type Model =
   member self.Title: string option =
     self.Todos
     |> List.length
-    |> (fun count -> if count = 0 then None else Some $"There are %i{count}")
+    |> (fun count -> if count = 0 then None else Some $"There are %i{count} items to do")
 
 
 type Msg =
@@ -35,11 +35,12 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     | GotTodos todos -> { model with Todos = todos }, Cmd.none
     | SetInput value -> { model with Input = value; Error = Todo.getError value }, Cmd.none
     | TryAddTodo ->
-        let add todo = Cmd.OfAsync.perform todosApi.addTodo todo AddedTodo
+        let add todo =
+          Cmd.OfAsync.perform todosApi.addTodo todo AddedTodo
 
         match Todo.tryCreate model.Input with
-          | Ok todo -> { model with Input = ""; Error = None }, add todo
-          | Error error -> { model with Error = Some error }, Cmd.none
+        | Ok todo -> { model with Input = ""; Error = None }, add todo
+        | Error error -> { model with Error = Some error }, Cmd.none
 
     | AddedTodo todo -> { model with Todos = model.Todos @ [ todo ] }, Cmd.none
 
@@ -65,7 +66,7 @@ let todoInput (model: Model) (dispatch: Msg -> unit) =
       Bulma.input.text [
         prop.value model.Input
         prop.placeholder "What needs to be done?"
-        prop.onChange (fun x -> SetInput x |> dispatch)
+        prop.onChange (SetInput >> dispatch)
         prop.onKeyPress (fun evt -> if evt.key = "Enter" then dispatch TryAddTodo else ())
         match model.Error with
           | Some _ -> color.isDanger
