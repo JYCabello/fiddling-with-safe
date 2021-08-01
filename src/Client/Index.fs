@@ -92,13 +92,7 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
             control.isExpanded
             prop.children (todoInput model dispatch)
           ]
-          Bulma.control.p [
-            Bulma.button.a [
-              color.isPrimary
-              prop.onClick (fun _ -> dispatch TryAddTodo)
-              prop.text "Add"
-            ]
-          ]
+          Components.okButton "Add" (fun _ -> dispatch TryAddTodo)
         ]
       ]
     ]
