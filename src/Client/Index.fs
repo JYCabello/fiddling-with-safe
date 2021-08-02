@@ -62,21 +62,12 @@ let navBrand =
     ]
 
 let todoInput (model: Model) (dispatch: Msg -> unit) =
-    [
-      Bulma.input.text [
-        prop.value model.Input
-        prop.placeholder "What needs to be done?"
-        prop.onChange (SetInput >> dispatch)
-        prop.onKeyPress (fun evt -> if evt.key = "Enter" then dispatch TryAddTodo else ())
-        match model.Error with
-          | Some _ -> color.isDanger
-          | None -> if model.Input.Length > 0 then color.isSuccess
-      ]
-      Bulma.help [
-        if model.Error.IsSome then color.isDanger else color.isSuccess
-        prop.text (model.Error |> Option.defaultValue "Press enter or click the button to save")
-      ]
-    ]
+  Components.validatedInput
+    model.Input
+    model.Error
+    (SetInput >> dispatch)
+    (Some <| fun () -> (dispatch TryAddTodo))
+    (Some "What needs to be done?")
 
 let containerBox (model: Model) (dispatch: Msg -> unit) =
     Bulma.box [
