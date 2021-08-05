@@ -44,7 +44,11 @@ let todosApi =
             | Ok () -> return todo
             | Error e -> return failwith e
         }
-    completeTodo = fun id -> async { storage.CompleteTodo id }
+    completeTodo = fun id -> async {
+      storage.CompleteTodo id
+      do! Async.Sleep 1500
+      return id
+    }
   }
 
 let webApp =

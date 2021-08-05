@@ -2,6 +2,7 @@ module Index
 
 open Elmish
 open Fable.Remoting.Client
+open Feliz.propModule
 open Shared
 open Browser
 open System
@@ -9,7 +10,8 @@ open System
 type Model =
   { Todos: Todo list
     Input: string
-    Error: string option }
+    Error: string option
+    Completing: Guid list }
   member self.Title: string option =
     self.Todos
     |> List.length
@@ -22,7 +24,7 @@ type Msg =
   | TryAddTodo
   | AddedTodo of Todo
   | CompleteTodo of Todo
-  | Ignore of unit
+  | CompletedTodo of Guid
 
 let todosApi =
   Remoting.createApi ()
@@ -30,7 +32,7 @@ let todosApi =
   |> Remoting.buildProxy<ITodosApi>
 
 let init () : Model * Cmd<Msg> =
-    { Todos = []; Input = ""; Error = None },
+    { Todos = []; Input = ""; Error = None; Completing = [] },
     Cmd.OfAsync.perform todosApi.getTodos () GotTodos
 
 let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
@@ -47,9 +49,13 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
 
     | AddedTodo todo -> { model with Todos = model.Todos @ [ todo ] }, Cmd.none
     | CompleteTodo todo ->
-      { model with Todos = model.Todos |> List.filter (fun t -> t.Id = todo.Id |> not) },
-      Cmd.OfAsync.perform todosApi.completeTodo todo.Id Ignore
-    | Ignore _ -> model, Cmd.none
+      { model with Completing = model.Completing @ [ todo.Id ] },
+      Cmd.OfAsync.perform todosApi.completeTodo todo.Id CompletedTodo
+    | CompletedTodo id ->
+      { model with
+          Todos = model.Todos |> List.filter (fun t -> t.Id = id |> not)
+          Completing = model.Completing |> List.filter (fun c -> c = id |> not) },
+      Cmd.none
 
 open Feliz
 open Feliz.Bulma
@@ -68,6 +74,9 @@ let navBrand =
       ]
     ]
 
+let isCompleting (model: Model) (todo: Todo) : bool =
+  model.Completing |> List.exists (fun id -> id = todo.Id)
+
 let todoInput (model: Model) (dispatch: Msg -> unit) =
   Components.validatedInput
     model.Input
@@ -76,13 +85,15 @@ let todoInput (model: Model) (dispatch: Msg -> unit) =
     (Some <| fun () -> (dispatch TryAddTodo))
     (Some "What needs to be done?")
 
-let todoItem (todo: Todo) (dispatch: Msg -> unit) =
+let todoItem (model: Model) (todo: Todo) (dispatch: Msg -> unit) =
   Html.li [
     prop.children [
       Html.span [
         prop.text todo.Description
       ]
-      Components.okButton "Complete" (fun _ -> dispatch <| CompleteTodo todo)
+      if not <| isCompleting model todo
+      then Components.okButton "Complete" (fun _ -> dispatch <| CompleteTodo todo)
+      else Html.span [ prop.text "Completing..." ]
     ]
   ]
 
@@ -90,7 +101,7 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
     Bulma.box [
       Bulma.content [
         Html.ol [
-          for todo in model.Todos do todoItem todo dispatch
+          for todo in model.Todos do todoItem model todo dispatch
         ]
       ]
       Bulma.field.div [
