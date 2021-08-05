@@ -86,17 +86,24 @@ let todoInput (model: Model) (dispatch: Msg -> unit) =
     (Some "What needs to be done?")
 
 let todoItem (model: Model) (todo: Todo) (dispatch: Msg -> unit) =
-  let completion =
+  let completionElement =
       if not <| isCompleting model todo
       then Components.okButton "Complete" (fun _ -> dispatch <| CompleteTodo todo)
-      else Html.span [ prop.text "Completing..." ]
+      else
+        Bulma.control.p [
+          Bulma.button.a [
+            color.isPrimary
+            prop.disabled true
+            prop.text "Completing"
+          ]
+        ]
 
   Html.li [
     prop.children [
       Html.span [
         prop.text todo.Description
       ]
-      completion
+      completionElement
     ]
   ]
 
