@@ -4,6 +4,7 @@ open Elmish
 open Fable.Remoting.Client
 open Shared
 open Browser
+open System
 
 type Model =
   { Todos: Todo list
@@ -20,6 +21,8 @@ type Msg =
   | SetInput of string
   | TryAddTodo
   | AddedTodo of Todo
+  | CompleteTodo of Todo
+  | Ignore of unit
 
 let todosApi =
   Remoting.createApi ()
@@ -43,6 +46,10 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
         | Error error -> { model with Error = Some error }, Cmd.none
 
     | AddedTodo todo -> { model with Todos = model.Todos @ [ todo ] }, Cmd.none
+    | CompleteTodo todo ->
+      { model with Todos = model.Todos |> List.filter (fun t -> t.Id = todo.Id |> not) },
+      Cmd.OfAsync.perform todosApi.completeTodo todo.Id Ignore
+    | Ignore _ -> model, Cmd.none
 
 open Feliz
 open Feliz.Bulma
@@ -69,11 +76,21 @@ let todoInput (model: Model) (dispatch: Msg -> unit) =
     (Some <| fun () -> (dispatch TryAddTodo))
     (Some "What needs to be done?")
 
+let todoItem (todo: Todo) (dispatch: Msg -> unit) =
+  Html.li [
+    prop.children [
+      Html.span [
+        prop.text todo.Description
+      ]
+      Components.okButton "Complete" (fun _ -> dispatch <| CompleteTodo todo)
+    ]
+  ]
+
 let containerBox (model: Model) (dispatch: Msg -> unit) =
     Bulma.box [
       Bulma.content [
         Html.ol [
-          for todo in model.Todos do Html.li [ prop.text todo.Description ]
+          for todo in model.Todos do todoItem todo dispatch
         ]
       ]
       Bulma.field.div [

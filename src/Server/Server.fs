@@ -3,6 +3,7 @@ module Server
 open Fable.Remoting.Server
 open Fable.Remoting.Giraffe
 open Saturn
+open System
 
 open Shared
 
@@ -17,6 +18,11 @@ type Storage() =
             Ok()
         else
             Error "Invalid todo"
+
+    member __.CompleteTodo(id: Guid) =
+        match todos |> Seq.tryFind (fun td -> td.Id = id) with
+        | Some found -> todos.Remove found |> ignore
+        | None -> ()
 
 let storage = Storage()
 
@@ -37,7 +43,9 @@ let todosApi =
           match storage.AddTodo todo with
             | Ok () -> return todo
             | Error e -> return failwith e
-        } }
+        }
+    completeTodo = fun id -> async { storage.CompleteTodo id }
+  }
 
 let webApp =
   Remoting.createApi ()

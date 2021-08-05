@@ -1,9 +1,10 @@
 module Components
 
+open Browser.Types
 open Feliz
 open Feliz.Bulma
 
-let okButton (text: string) onClick =
+let okButton (text: string) (onClick: MouseEvent -> unit) =
   Bulma.control.p [
     Bulma.button.a [
       color.isPrimary
